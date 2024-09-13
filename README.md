@@ -5,7 +5,7 @@ Poisson based decomposition
 A helmholtz decomposition of a vector field based on a poisson solver. This version should work regardless of boundary conditions internal boundary conditions as it is not spatially dependent.
 
 Fourier based decomposition
-A helmholtz decomposition of a vector field based on a poisson solver. This version is the fastest and only works for periodic or Dirichlet boudary conditions. A direct cosine transform must be used instead for Neumann conditions.
+A helmholtz decomposition of a vector field based on a poisson solver. This version is the fastest and only works for periodic or Dirichlet boudary conditions. A direct cosine transform must be used instead for Neumann conditions. (see https://doi.org/10.3389/fspas.2024.1431238 for a derivation)
 
 Green's based decomposition
 A helmholtz decomposition of a vector field based on a poisson solver. This version is the slowlest and but shoudl work irrespective of boundary conditions.
