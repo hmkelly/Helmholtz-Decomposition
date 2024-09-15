@@ -1,5 +1,5 @@
-# HelmholtzDecomposition
-A python package for multiple different methods to decompose a vectorfield into its irrotaional and rotaional components.
+# Numerical Helmholtz Decomposition methods in Python
+A python package for multiple different methods to decompose a vector field into its irrotaional and rotaional components.
 
 Poisson based decomposition
 A helmholtz decomposition of a vector field based on a poisson solver. This version should work regardless of boundary conditions internal boundary conditions as it is not spatially dependent.
