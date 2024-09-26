@@ -11,4 +11,4 @@ Green's based decomposition
 A helmholtz decomposition of a vector field based on a poisson solver. This version is the slowlest and but should work irrespective of boundary conditions. Contains both surface and volume integrals.
 
 Poisson solver
-A function to calculate the potential from a charge distribution using a Poisson solver it is based on the FFT convolution Hockney-Eastwood algorithm. ( R. W. Hockney and J. W. Eastwood, Computer simulation using particles (crc Press, 1988).)
+A function to calculate the potential from a charge distribution using a Poisson solver based on the FFT convolution Hockney-Eastwood algorithm. ( R. W. Hockney and J. W. Eastwood, Computer simulation using particles (crc Press, 1988).)
