@@ -20,7 +20,11 @@ def Helmholtz_Decomp_Poisson(v_field, h):
     div = calc_divergence(v_field, dx=h, dy=h, dz=h)
 
     # Find the scalar potential
-    scalpot = poisson(div, h)
+    scalpot_volume = poisson(div, h)
+
+    scalpot_surface = surface_contribution_scalar(v_field, h)
+
+    scalpot =  scalpot_volume - scalpot_surface
 
     # Find the irrotational component
     irrotational = - np.asarray(np.gradient((scalpot), h, h, h))
@@ -29,9 +33,13 @@ def Helmholtz_Decomp_Poisson(v_field, h):
     curl = calc_curl(v_field, dx=h, dy=h, dz=h)
 
     # Find the vector potential
-    vecpot = np.stack([poisson(curl[0], h),
+    vecpot_volume = np.stack([poisson(curl[0], h),
                        poisson(curl[1], h), 
                        poisson(curl[2], h)])
+
+    vecpot_surface = surface_contribution_vector(v_field, h)
+
+    vecpot = vecpot_volume - vecpot_surface
 
     # Find the rotational component
     rotational = calc_curl(vecpot, dx=h, dy=h, dz=h)
@@ -49,9 +57,13 @@ def Helmholtz_Decomp_Poisson_rotational(v_field, h):
     curl = calc_curl(v_field, dx=h, dy=h, dz=h)
 
     # Find the vector potential
-    vecpot = np.stack([poisson(curl[0], h),
+    vecpot_volume = np.stack([poisson(curl[0], h),
                        poisson(curl[1], h), 
                        poisson(curl[2], h)])
+
+    vecpot_surface = surface_contribution_vector(v_field, h)
+
+    vecpot = vecpot_volume - vecpot_surface
 
     # Find the rotational component
     rotational = calc_curl(vecpot, dx=h, dy=h, dz=h)
@@ -69,7 +81,11 @@ def Helmholtz_Decomp_Poisson_irrotational(v_field, h):
     div = calc_divergence(v_field, dx=h, dy=h, dz=h)
 
     # Find the scalar potential
-    scalpot = poisson(div, h)
+    scalpot_volume = poisson(div, h)
+
+    scalpot_surface = surface_contribution_scalar(v_field, h)
+
+    scalpot =  scalpot_volume - scalpot_surface
 
     # Find the irrotational component
     irrotational = -np.asarray(np.gradient((scalpot), h, h, h))
@@ -139,6 +155,189 @@ def poisson(field, h):
     potential = h * h * h * padded_potential[0:xdim,0:ydim,0:zdim]
     
     return(potential)
+
+def surface_contribution_vector(vec_field, h):
+
+    v_field = vec_field.copy()
+
+    # Algorithm to 0 pad the field
+    D, xdim, ydim, zdim = v_field.shape
+
+    # Set everything that isn't a face to 0
+    v_field[:,1:xdim-1,1:ydim-1,1:zdim-1] = 0
+
+    # Build a surface normal matrix
+    N = np.zeros(v_field.shape)
+
+    # Top face
+    N[:,:,:,-1] = np.asarray([0,0,1])[:,np.newaxis,np.newaxis]
+
+    # Bottom face
+    N[:,:,:,0] = np.asarray([0,0,-1])[:,np.newaxis,np.newaxis]
+
+    # Left face
+    N[:,0,:,:] = np.asarray([-1,0,0])[:,np.newaxis,np.newaxis]
+
+    # Right face
+    N[:,-1,:,:] = np.asarray([1,0,0])[:,np.newaxis,np.newaxis]
+
+    # Front face
+    N[:,:,0,:] = np.asarray([0,-1,0])[:,np.newaxis,np.newaxis]
+
+    # Back face
+    N[:,:,-1,:] = np.asarray([0,1,0])[:,np.newaxis,np.newaxis]
+
+    # Redefine the edges (Remember there are 12 for a cube and n is pointing outwards)
+
+    # Front face bottom
+    N[:,:,0,0] = np.asarray([0,-1,-1])[:,np.newaxis] / np.sqrt(2)
+    # Front face top
+    N[:,:,0,-1] = np.asarray([0,-1,1])[:,np.newaxis] / np.sqrt(2)
+    # Front face left
+    N[:,0,0,:] = np.asarray([-1,-1,0])[:,np.newaxis] / np.sqrt(2)
+    # Front face right
+    N[:,-1,0,:] = np.asarray([1,-1,0])[:,np.newaxis] / np.sqrt(2)
+    # Back face bottom
+    N[:,:,-1,0] = np.asarray([0,1,-1])[:,np.newaxis] / np.sqrt(2)
+    # Back face top
+    N[:,:,-1,-1] = np.asarray([0,1,1])[:,np.newaxis] / np.sqrt(2)
+    # Back face right
+    N[:,-1,-1,:] = np.asarray([1,1,0])[:,np.newaxis] / np.sqrt(2)
+    # Back face left
+    N[:,0,-1,:] = np.asarray([-1,1,0])[:,np.newaxis] / np.sqrt(2)
+    # Bottom face right
+    N[:,-1,:,0] = np.asarray([1,0,-1])[:,np.newaxis] / np.sqrt(2)
+    # Bottom face left
+    N[:,-1,:,0] = np.asarray([1,0,-1])[:,np.newaxis] / np.sqrt(2)
+    # Top face right
+    N[:,-1,:,-1] = np.asarray([1,0,1])[:,np.newaxis] / np.sqrt(2)
+    # Top face left
+    N[:,0,:,-1] = np.asarray([-1,0,1])[:,np.newaxis] / np.sqrt(2)
+    
+    # Redefine the vertices (Remember there are 8 for a cube and n is pointing outwards)
+    
+    # Bottom Front Right
+    N[:,-1,0,0] = np.asarray([1,-1,-1]) / np.sqrt(3)
+
+    # Bottom Front Left
+    N[:,0,0,0] = np.asarray([-1,-1,-1]) / np.sqrt(3)
+
+    # Bottom Back Right
+    N[:,-1,-1,0] = np.asarray([1,1,-1]) / np.sqrt(3)
+
+    # Bottom Back Left
+    N[:,0,-1,0] = np.asarray([-1,1,-1]) / np.sqrt(3)
+
+    # Top Front Right
+    N[:,-1,0,-1] = np.asarray([1,-1,1]) / np.sqrt(3)
+
+    # Top Front Left
+    N[:,0,0,-1] = np.asarray([1,-1,1]) / np.sqrt(3)
+
+    # Top Back Right
+    N[:,-1,-1,-1] = np.asarray([1,1,1]) / np.sqrt(3)
+
+    # Top Back Left
+    N[:,0,-1,-1] = np.asarray([-1,1,1]) / np.sqrt(3)
+
+    # Cross the face with the normal direction
+    field = np.cross(N, v_field, axis=0)
+
+    vecpot_surface = np.stack([poisson(field[0], h),
+                       poisson(field[1], h), 
+                       poisson(field[2], h)])/h # Divide it by h as the volume has a dV (h^3) where as we want a dS (h^2)
+    return(vecpot_surface)
+
+def surface_contribution_scalar(vec_field, h):
+
+    v_field = vec_field.copy()
+
+    # Algorithm to 0 pad the field
+    D, xdim, ydim, zdim = v_field.shape
+
+    # Set everything that isn't a face to 0
+    v_field[:,1:xdim-1,1:ydim-1,1:zdim-1] = 0
+
+    # Build a surface normal matrix
+    N = np.zeros(v_field.shape)
+
+    # Top face
+    N[:,:,:,-1] = np.asarray([0,0,1])[:,np.newaxis,np.newaxis]
+
+    # Bottom face
+    N[:,:,:,0] = np.asarray([0,0,-1])[:,np.newaxis,np.newaxis]
+
+    # Left face
+    N[:,0,:,:] = np.asarray([-1,0,0])[:,np.newaxis,np.newaxis]
+
+    # Right face
+    N[:,-1,:,:] = np.asarray([1,0,0])[:,np.newaxis,np.newaxis]
+
+    # Front face
+    N[:,:,0,:] = np.asarray([0,-1,0])[:,np.newaxis,np.newaxis]
+
+    # Back face
+    N[:,:,-1,:] = np.asarray([0,1,0])[:,np.newaxis,np.newaxis]
+
+    # Redefine the edges (Remember there are 12 for a cube and n is pointing outwards)
+
+    # Front face bottom
+    N[:,:,0,0] = np.asarray([0,-1,-1])[:,np.newaxis] / np.sqrt(2)
+    # Front face top
+    N[:,:,0,-1] = np.asarray([0,-1,1])[:,np.newaxis] / np.sqrt(2)
+    # Front face left
+    N[:,0,0,:] = np.asarray([-1,-1,0])[:,np.newaxis] / np.sqrt(2)
+    # Front face right
+    N[:,-1,0,:] = np.asarray([1,-1,0])[:,np.newaxis] / np.sqrt(2)
+    # Back face bottom
+    N[:,:,-1,0] = np.asarray([0,1,-1])[:,np.newaxis] / np.sqrt(2)
+    # Back face top
+    N[:,:,-1,-1] = np.asarray([0,1,1])[:,np.newaxis] / np.sqrt(2)
+    # Back face right
+    N[:,-1,-1,:] = np.asarray([1,1,0])[:,np.newaxis] / np.sqrt(2)
+    # Back face left
+    N[:,0,-1,:] = np.asarray([-1,1,0])[:,np.newaxis] / np.sqrt(2)
+    # Bottom face right
+    N[:,-1,:,0] = np.asarray([1,0,-1])[:,np.newaxis] / np.sqrt(2)
+    # Bottom face left
+    N[:,-1,:,0] = np.asarray([1,0,-1])[:,np.newaxis] / np.sqrt(2)
+    # Top face right
+    N[:,-1,:,-1] = np.asarray([1,0,1])[:,np.newaxis] / np.sqrt(2)
+    # Top face left
+    N[:,0,:,-1] = np.asarray([-1,0,1])[:,np.newaxis] / np.sqrt(2)
+    
+    # Redefine the vertices (Remember there are 8 for a cube and n is pointing outwards)
+    
+    # Bottom Front Right
+    N[:,-1,0,0] = np.asarray([1,-1,-1]) / np.sqrt(3)
+
+    # Bottom Front Left
+    N[:,0,0,0] = np.asarray([-1,-1,-1]) / np.sqrt(3)
+
+    # Bottom Back Right
+    N[:,-1,-1,0] = np.asarray([1,1,-1]) / np.sqrt(3)
+
+    # Bottom Back Left
+    N[:,0,-1,0] = np.asarray([-1,1,-1]) / np.sqrt(3)
+
+    # Top Front Right
+    N[:,-1,0,-1] = np.asarray([1,-1,1]) / np.sqrt(3)
+
+    # Top Front Left
+    N[:,0,0,-1] = np.asarray([1,-1,1]) / np.sqrt(3)
+
+    # Top Back Right
+    N[:,-1,-1,-1] = np.asarray([1,1,1]) / np.sqrt(3)
+
+    # Top Back Left
+    N[:,0,-1,-1] = np.asarray([-1,1,1]) / np.sqrt(3)
+
+    # Dot the face with the normal direction to itself
+    field = np.einsum('ixyz,ixyz->xyz' ,N, v_field)
+
+    potential = poisson(field,h) / h # Divide it by h as the volume has a dV (h^3) where as we want a dS (h^2)
+    return(potential)
+
 
 def Helmholtz_Decomp_Fourier(F):
     """
